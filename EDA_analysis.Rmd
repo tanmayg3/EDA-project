@@ -1,0 +1,233 @@
+---
+title: "Exploring the BRFSS data"
+output: 
+  html_document: 
+    fig_height: 4
+    highlight: pygments
+    theme: spacelab
+---
+
+## Setup
+
+### Load packages
+
+```{r load-packages, message = FALSE}
+library(ggplot2)
+library(dplyr)
+```
+
+### Load data
+
+
+
+```{r load-data}
+load("brfss2013.RData")
+```
+
+
+
+* * *
+
+## Part 1: Data
+
+On investigation of the BRFSS dataset, first thing observed was that all US states (including District of Couloumbia, Guam, Puerto Rico & US Virgin ISlands) were considered as a sample, of which consists of only adults (18 & older) from the population. These adults were thus, selected Randomly from the sample which means the scope of inference is generalizablility.
+Causality can be infered only when the data is subjected to Random assigment, but in this case there is no mention of treatment or control of variables (explanatory), and the data is based on blocking principle wherein the data is collected as is. Thus, Causality can be dismissed.
+The data was collected from a random sample using two methods: Landline phone surveys & Cellular phone surveys.
+Landline surveys were in turn subjected to further random selection of an adult in the household whereas, cellular phone surveys were further subjected to adults living in a private residence or leasing.
+Since, the mentioned method of collecting Data via telephone was random selection, it could lead to Non-response bias due to unavailabilty to take calls or Voluntary bias because individuals may choose not to take the survey.
+
+
+* * *
+
+## Part 2: Research questions
+
+**Research quesion 1:**
+
+To find the relation between each state versus the number of adults who were told their cholestrol levels were high, and eventually find out how many of these adults were male or female.
+Therefore, we concentrate on the following THREE variables 'X_state' , 'toldhi2' and 'sex'.
+We need to remove the NA values, hence "filter(!is.na())" is used".
+
+```{r count_state_sex_cholestrolhigh}
+brfss2013 %>%
+ filter(!is.na(toldhi2)) %>%
+     filter(!is.na(sex)) %>%
+ group_by(X_state, toldhi2, sex) %>%
+ summarise (count = n())
+```
+
+So, we further filter according to Males who have been told their cholerstrol level was high; in the same way filter according to Females.
+And thus, using "filter" function; we can compare the relationship between Males vs Females who were told their cholestrol levels were high.
+
+```{r filter_Males_cholestrolhigh}
+brfss2013 %>%
+ group_by( X_state, toldhi2, sex ) %>%
+    summarise (count = n()) %>%
+ filter(sex == "Male" ) %>%
+ filter(toldhi2 == "Yes")
+
+```
+
+```{r filter_Females_cholestrolhigh}
+brfss2013 %>%
+ group_by(X_state, toldhi2, sex) %>%
+     summarise (count = n()) %>%
+     filter(sex == "Female" ) %>%
+ filter(toldhi2 == "Yes")
+```
+
+
+
+**Research quesion 2:**
+
+To determine the relationship between Income Level and having Any Health Care Coverage.
+The concerned TWO Variables in this case are "income2" and "hlthpln1".
+We use "Filter" function to get rid of NA values.
+
+```{r income_health plan}
+brfss2013 %>%
+ filter(!is.na(hlthpln1)) %>%
+ filter(!is.na(income2)) %>%
+ group_by(income2, hlthpln1) %>%
+ summarise(count = n())
+```
+
+Also, we can seperately find the adults having/not having any Health Plan with respect to their income levels, as follows:
+
+```{r income_having healthplan}
+brfss2013 %>%
+ filter(!is.na(hlthpln1)) %>%
+ filter(!is.na(income2)) %>%
+ group_by(income2, hlthpln1) %>%
+ summarise(count = n()) %>%
+ filter(hlthpln1 == "Yes")
+```
+
+```{r income_not having healthplan}
+brfss2013 %>%
+ filter(!is.na(hlthpln1)) %>%
+ filter(!is.na(income2)) %>%
+ group_by(income2, hlthpln1) %>%
+ summarise(count = n()) %>%
+ filter(hlthpln1 == "No")
+```
+ 
+
+
+**Research quesion 3:**
+
+To find out how many Single(Never Married) adults own or rent a home and determine the relationship in accordance to the Number of hours per day they work.
+Thus, we concentrate of the following THREE Variables: "Marital", "renthom1" and "scntwrk1".
+
+First, we find the relationship between marital status & own/rent a home, with respect to Number of hours per day they work using "filter(!is.na())" command to filter out the NA values.
+
+```{r marital_renthome}
+brfss2013 %>%
+ filter(!is.na(marital)) %>%
+ filter(!is.na(renthom1)) %>%
+ filter(!is.na(scntwrk1)) %>%
+ group_by(marital, renthom1, scntwrk1) %>%
+summarise(count = n()) 
+```
+ 
+ Now, we can further find out, specific data like: How many "Never married" adults, "own a home" given that they work "45 or less hours per day"?
+Following is the code to run:
+ 
+```{r marital_renthom_hrswkwork}
+brfss2013 %>%
+ filter(!is.na(renthom1)) %>%
+ filter(!is.na(scntwrk1)) %>%
+ filter(!is.na(marital)) %>%
+ group_by(marital, renthom1, scntwrk1) %>%
+ filter(marital == "Never married") %>%
+ filter(renthom1 == "Own") %>%
+ filter(scntwrk1 <= 45) %>%
+summarise(count = n())
+```
+ 
+Similarly, we can find out the "Never married" adults, "rent a home", just by changing the filter: "filter(renthom1 == "Rent")"
+
+
+ 
+* * *
+
+
+## Part 3: Exploratory data analysis
+
+
+
+**Research quesion 1:**
+
+According to this question, there are #3 CATEGORICAL variables involved ie., "X_state", "toldhi2" & "sex".
+For EDA in this case, we can use BAR PLOT with FACETS, and we achieve that using the below code.
+We can see below, it is a diverse output considering the Number of states.
+P.S.: Refer the research questions for numeric analysis & table.
+
+Firstly, there is this generalized observation that the bar-plot output resembles a right-skewed shape, wherein the "State of FLORIDA" has the highest amount of adults who were told their "cholestrol levels are HIGH"; subsequently if we COMPARE MALE vs FEMALE, thiese Levels of cholestrol is even HIGHER. At the same we can observe that there a considerable amount of people who have been told their cholestrol levels are NOT HIGH in the same state as well!
+
+The second most highest cholestrol levels are observed in the State of KANSAS, where there are more number of FEMALES who DID NOT have HIGH levels of cholestrol.
+Whereas, the LEAST number of males & females who were told their cholestrol levels were high were in the "SATE OF GUAM".
+
+From this EDA, Overall we can observe that, MORE number of FEMALES have been told they had HIGH cholestrol levels than MALES in the respective STATES. 
+
+```{r state_sex_cholestrolhigh}
+ggplot(data = brfss2013, aes(x=X_state, fill= toldhi2) ) +
+ geom_bar() + facet_wrap( ~ sex, ncol= 1) + theme(axis.text.x = element_text(angle = 90))
+```
+
+
+**Research quesion 2:**
+
+In this question we are dealing with TWO CATEGORICAL variables ie., "income2" and "hlthpln1".
+Thus, we can find the relationship between these TWO using BAR-PLOT using the below commands.
+Looking at the Bar-plot we can read the results better if we use position "dodge" for the geom_bar command.
+P.S.: Refer the research questions for numeric analysis & table.
+
+So, we observe that the BAR_PLOT is LEFT-SKEWED in SHAPE (disregarding the NA values), wherein the adults having an income "$75,000 or MORE"" MOST DEFINITELY HAVE ANY HEALTH CARE COVERAGE. Whereas, those having INCOME "Less than $10,000", have LESSER access to any HEALTH CARE COVERAGE.
+At the same time, the trends for those adults having NO HEALTH CARE COVERAGE vs INCOME show a RIGHT-SKEWED shape (disregaring the NA values).
+
+Thus, the EDA suggests that, those adults having HIGHER INCOME have better chances of HAVING any HEALTH CARE COVERAGE.
+
+```{r income_hlthpln}
+ggplot(brfss2013, aes(x = income2 , fill = hlthpln1)) + 
+  geom_bar(position = "dodge") + theme(axis.text.x = element_text(angle = 90))
+```
+
+
+
+**Research quesion 3:**
+
+This question is concerned with "2 CATEGORICAL & 1 NUMERICAL VAriables" i.e., "marital" and "renthom1" as Categorical & "scntwrk1" as Numerical variables.
+P.S.: Refer the research questions for numeric analysis & table.
+
+Thus, we can find the relationship between these THREE using "BAR-PLOT with FACETS" using the below commands.
+Looking at the bar-plot in general, we are unable to see the plots clearly due the VAST range of Variable values for "Number of hrs/week you worked"(scntwrk1). Thus, we can observe that, there is a "UNIMODAL" but, SOMEWHAT "RIGHT-SKEWED" shape to the Bar-plot suggesting that :- 
+1. MORE "MARRIED" adults, who work for "ABOUT 40 HRS per WEEK" are the ones who "OWN a HOME", and  the category of "A MEMBER OF A MARRIED COUPLE" working about 40 HRS have LEAST amount of people OWNING a HOME. 
+2. COMPARE that to the adults who "RENT A HOME", again we see similar trends in which, MORE "MARRIED" adults, who work for "ABOUT 40 HRS per WEEK" show the TOP results.
+3. Simiar is the case with adults having "Other arrangement" for home, but the count of ADULTS in this CATEGORY is comparatively LESS, hence we can hardly see the PLOTS.
+
+
+```{r marital_scntwrk_renthom}
+
+ggplot(brfss2013, aes(x=scntwrk1, fill = marital)) +
+  geom_bar() + facet_wrap( ~ renthom1, ncol= 2)  
+   
+```
+
+TO have a clear understanding of the BAR-Plot we can divide the observations in a couple of parts. Here, I have considered "Number of hrs per WEEK worked" to be UPTO 45 or LESS, having the following RESULTS.
+
+As observed before, we can support the results from theprevious observations that, the PLOT is "RIGHT-SKEWED" in case of "OWNING a HOME", "RENTING a HOME" & "Having OTHER ARRANGEMENT".
+Also, MORE "MARRIED" adults "working for 45 hours or LESS", "OWN a HOME" or "RENT".
+
+Overall,from this EDA we can conclude that MARRIED adults have a higher possibility of OWNING or RENTING a HOME. 
+
+```{r marital_rent_hrspwk}
+brfss2013_marital_rent_hrspwk <- brfss2013 %>%
+ filter(!is.na(marital), scntwrk1 <="45") %>%
+ select(marital, scntwrk1, renthom1)
+ brfss2013_marital_rent_hrspwk %>%
+ggplot( aes(x=scntwrk1, fill = marital)) +
+  geom_bar() + facet_wrap( ~ renthom1, ncol= 2)
+```
+
+
+
